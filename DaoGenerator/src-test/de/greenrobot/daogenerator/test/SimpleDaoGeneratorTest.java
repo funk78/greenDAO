@@ -33,33 +33,74 @@ import de.greenrobot.daogenerator.Schema;
 
 public class SimpleDaoGeneratorTest {
 
-    @Test
-    public void testMinimalSchema() throws Exception {
-        Schema schema = new Schema(1, "de.greenrobot.testdao");
-        Entity adressTable = schema.addEntity("Adresse");
-        Property idProperty = adressTable.addIdProperty().getProperty();
-        adressTable.addIntProperty("count").index();
-        adressTable.addIntProperty("dummy").notNull();
-        assertEquals(1, schema.getEntities().size());
-        assertEquals(3, adressTable.getProperties().size());
+	@Test
+	public void testMinimalSchema() throws Exception {
+		Schema schema = new Schema(1, "de.greenrobot.testdao");
+		Entity adressTable = schema.addEntity("Adresse");
+		Property idProperty = adressTable.addIdProperty().getProperty();
+		adressTable.addIntProperty("count").index();
+		adressTable.addIntProperty("dummy").notNull();
+		assertEquals(1, schema.getEntities().size());
+		assertEquals(3, adressTable.getProperties().size());
 
-        File daoFile = new File("test-out/de/greenrobot/testdao/" + adressTable.getClassName() + "Dao.java");
-        daoFile.delete();
-        assertFalse(daoFile.exists());
+		File testOutDir = new File("test-out");
+		testOutDir.mkdirs();
 
-        new DaoGenerator().generateAll(schema, "test-out");
+		File daoFile = new File("test-out/de/greenrobot/testdao/" + adressTable.getClassName() + "Dao.java");
+		daoFile.delete();
+		assertFalse(daoFile.exists());
 
-        assertEquals("PRIMARY KEY", idProperty.getConstraints());
-        assertTrue(daoFile.toString(), daoFile.exists());
-    }
+		new DaoGenerator().generateAll(schema, "test-out");
 
-    @Test
-    public void testDbName() {
-        assertEquals("NORMAL", DaoUtil.dbName("normal"));
-        assertEquals("NORMAL", DaoUtil.dbName("Normal"));
-        assertEquals("CAMEL_CASE", DaoUtil.dbName("CamelCase"));
-        assertEquals("CAMEL_CASE_THREE", DaoUtil.dbName("CamelCaseThree"));
-        assertEquals("CAMEL_CASE_XXXX", DaoUtil.dbName("CamelCaseXXXX"));
-    }
+		assertEquals("PRIMARY KEY", idProperty.getConstraints());
+		assertTrue(daoFile.toString(), daoFile.exists());
+	}
+
+	@Test
+	public void testMinimalSchemaWithDsIntegration() throws Exception {
+		Schema schema = new Schema(1, "de.greenrobot.testdao");
+		Entity adressTable = schema.addEntity("Adresse");
+		Property idProperty = adressTable.addIdProperty().getProperty();
+		adressTable.addIntProperty("count").index();
+		adressTable.addIntProperty("dummy").notNull();
+		assertEquals(1, schema.getEntities().size());
+		assertEquals(3, adressTable.getProperties().size());
+
+		String outDir = "test-out";
+		File testOutDir = new File(outDir);
+		testOutDir.mkdirs();
+
+		String appSrcDir = "test-app-src-dir";
+		File appSrcTestOutDir = new File(appSrcDir);
+		appSrcTestOutDir.mkdirs();
+
+		File daoFile = new File(outDir + "/de/greenrobot/testdao/" + adressTable.getClassName() + "Dao.java");
+		daoFile.delete();
+		assertFalse(daoFile.exists());
+
+		File fakeEntity = new File(appSrcDir + "/com/google/appengine/api/datastore/Entity.java");
+		fakeEntity.delete();
+		assertFalse(fakeEntity.exists());
+
+		new DaoGenerator().generateAllWithDataStoreIntegration(schema, appSrcDir, outDir);
+
+		assertTrue(fakeEntity.toString(), fakeEntity.exists());
+		assertEquals("PRIMARY KEY", idProperty.getConstraints());
+		assertTrue(daoFile.toString(), daoFile.exists());
+
+		daoFile.delete();
+		fakeEntity.delete();
+		appSrcTestOutDir.delete();
+		testOutDir.delete();
+	}
+
+	@Test
+	public void testDbName() {
+		assertEquals("NORMAL", DaoUtil.dbName("normal"));
+		assertEquals("NORMAL", DaoUtil.dbName("Normal"));
+		assertEquals("CAMEL_CASE", DaoUtil.dbName("CamelCase"));
+		assertEquals("CAMEL_CASE_THREE", DaoUtil.dbName("CamelCaseThree"));
+		assertEquals("CAMEL_CASE_XXXX", DaoUtil.dbName("CamelCaseXXXX"));
+	}
 
 }

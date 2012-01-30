@@ -38,156 +38,172 @@ import freemarker.template.Template;
  */
 public class DaoGenerator {
 
-    private Pattern patternKeepIncludes;
-    private Pattern patternKeepFields;
-    private Pattern patternKeepMethods;
+	private Pattern		patternKeepIncludes;
+	private Pattern		patternKeepFields;
+	private Pattern		patternKeepMethods;
 
-    private Template templateDao;
-    private Template templateDaoMaster;
-    private Template templateDaoSession;
-    private Template templateEntity;
-    private Template templateDaoUnitTest;
+	private Template	templateDao;
+	private Template	templateDaoMaster;
+	private Template	templateDaoSession;
+	private Template	templateEntity;
+	private Template	templateDaoUnitTest;
+	private Template	templateFakeDsEntity;
 
-    public DaoGenerator() throws IOException {
-        System.out.println("greenDAO Generator");
-        System.out.println("Copyright 2011 Markus Junginger, greenrobot.de. Licensed under GPL V3.");
-        System.out.println("This program comes with ABSOLUTELY NO WARRANTY");
+	public DaoGenerator() throws IOException {
+		System.out.println("greenDAO Generator");
+		System.out.println("Copyright 2011 Markus Junginger, greenrobot.de. Licensed under GPL V3.");
+		System.out.println("This program comes with ABSOLUTELY NO WARRANTY");
 
-        patternKeepIncludes = compilePattern("INCLUDES");
-        patternKeepFields = compilePattern("FIELDS");
-        patternKeepMethods = compilePattern("METHODS");
+		this.patternKeepIncludes = compilePattern("INCLUDES");
+		this.patternKeepFields = compilePattern("FIELDS");
+		this.patternKeepMethods = compilePattern("METHODS");
 
-        Configuration config = new Configuration();
-        config.setClassForTemplateLoading(this.getClass(), "/");
-        config.setObjectWrapper(new DefaultObjectWrapper());
+		Configuration config = new Configuration();
+		config.setClassForTemplateLoading(this.getClass(), "/");
+		config.setObjectWrapper(new DefaultObjectWrapper());
 
-        templateDao = config.getTemplate("dao.ftl");
-        templateDaoMaster = config.getTemplate("dao-master.ftl");
-        templateDaoSession = config.getTemplate("dao-session.ftl");
-        templateEntity = config.getTemplate("entity.ftl");
-        templateDaoUnitTest = config.getTemplate("dao-unit-test.ftl");
-    }
+		this.templateDao = config.getTemplate("dao.ftl");
+		this.templateDaoMaster = config.getTemplate("dao-master.ftl");
+		this.templateDaoSession = config.getTemplate("dao-session.ftl");
+		this.templateFakeDsEntity = config.getTemplate("fakeDatastoreEntity.ftl");
+		this.templateEntity = config.getTemplate("entity.ftl");
+		this.templateDaoUnitTest = config.getTemplate("dao-unit-test.ftl");
+	}
 
-    private Pattern compilePattern(String sectionName) {
-        int flags = Pattern.DOTALL | Pattern.MULTILINE;
-        return Pattern.compile(".*^\\s*?//\\s*?KEEP " + sectionName + ".*?\n(.*?)^\\s*// KEEP " + sectionName
-                + " END.*?\n", flags);
-    }
+	private Pattern compilePattern(String sectionName) {
+		int flags = Pattern.DOTALL | Pattern.MULTILINE;
+		return Pattern.compile(".*^\\s*?//\\s*?KEEP " + sectionName + ".*?\n(.*?)^\\s*// KEEP " + sectionName + " END.*?\n", flags);
+	}
 
-    /** Generates all entities and DAOs for the given schema. */
-    public void generateAll(Schema schema, String outDir) throws Exception {
-        generateAll(schema, outDir, null);
-    }
+	/** Generates all entities and DAOs for the given schema. 
+	 * 
+	 * */
+	public void generateAllWithDataStoreIntegration(Schema schema, String appSrcDir, String outDir) throws Exception {
+		generateAll(schema, appSrcDir, outDir, null);
+	}
 
-    /** Generates all entities and DAOs for the given schema. */
-    public void generateAll(Schema schema, String outDir, String outDirTest) throws Exception {
-        long start = System.currentTimeMillis();
+	public void generateAll(Schema schema, String outDir) throws Exception {
+		generateAll(schema, null, outDir, null);
+	}
 
-        File outDirFile = toFileForceExists(outDir);
+	/** Generates all entities and DAOs for the given schema. */
+	public void generateAll(Schema schema, String appSrcDir, String outDir, String outDirTest) throws Exception {
+		long start = System.currentTimeMillis();
 
-        File outDirTestFile = null;
-        if (outDirTest != null) {
-            outDirTestFile = toFileForceExists(outDirTest);
-        }
+		File outDirFile = toFileForceExists(outDir);
 
-        schema.init2ndPass();
-        schema.init3ndPass();
+		File outDirTestFile = null;
+		if (outDirTest != null) {
+			outDirTestFile = toFileForceExists(outDirTest);
+		}
 
-        List<Entity> entities = schema.getEntities();
+		if (schema.isHasEasyDatastoreIntegration() && appSrcDir == null) {
+			throw new RuntimeException(
+					"U have to provide the appSrcDir when using the EasyDataStoreIntegration, use method: generateAllWithDataStoreIntegration()");
+		}
 
-        for (Entity entity : entities) {
-            generate(templateDao, outDirFile, entity.getJavaPackageDao(), entity.getClassNameDao(), schema, entity);
-            if (!entity.isProtobuf() && !entity.isSkipGeneration()) {
-                generate(templateEntity, outDirFile, entity.getJavaPackage(), entity.getClassName(), schema, entity);
-            }
-            if (outDirTestFile != null && !entity.isSkipGenerationTest()) {
-                String javaPackageTest = entity.getJavaPackageTest();
-                String classNameTest = entity.getClassNameTest();
-                File javaFilename = toJavaFilename(outDirTestFile, javaPackageTest, classNameTest);
-                if (!javaFilename.exists()) {
-                    generate(templateDaoUnitTest, outDirTestFile, javaPackageTest, classNameTest, schema, entity);
-                } else {
-                    System.out.println("Skipped " + javaFilename.getCanonicalPath());
-                }
-            }
-        }
-        generate(templateDaoMaster, outDirFile, schema.getDefaultJavaPackageDao(), "DaoMaster", schema, null);
-        generate(templateDaoSession, outDirFile, schema.getDefaultJavaPackageDao(), "DaoSession", schema, null);
+		File appSrcDirFile = null;
+		if (appSrcDir != null) {
+			appSrcDirFile = toFileForceExists(appSrcDir);
+		}
 
-        long time = System.currentTimeMillis() - start;
-        System.out.println("Processed " + entities.size() + " entities in " + time + "ms");
-    }
+		schema.init2ndPass();
+		schema.init3ndPass();
 
-    protected File toFileForceExists(String filename) throws IOException {
-        File file = new File(filename);
-        if (!file.exists()) {
-            throw new IOException(filename
-                    + " does not exist. This check is to prevent accidential file generation into a wrong path.");
-        }
-        return file;
-    }
+		List<Entity> entities = schema.getEntities();
 
-    private void generate(Template template, File outDirFile, String javaPackage, String javaClassName, Schema schema,
-            Entity entity) throws Exception {
-        try {
-            File file = toJavaFilename(outDirFile, javaPackage, javaClassName);
-            file.getParentFile().mkdirs();
+		for (Entity entity : entities) {
+			generate(this.templateDao, outDirFile, entity.getJavaPackageDao(), entity.getClassNameDao(), schema, entity);
+			if (!entity.isProtobuf() && !entity.isSkipGeneration()) {
+				generate(this.templateEntity, outDirFile, entity.getJavaPackage(), entity.getClassName(), schema, entity);
+			}
+			if (outDirTestFile != null && !entity.isSkipGenerationTest()) {
+				String javaPackageTest = entity.getJavaPackageTest();
+				String classNameTest = entity.getClassNameTest();
+				File javaFilename = toJavaFilename(outDirTestFile, javaPackageTest, classNameTest);
+				if (!javaFilename.exists()) {
+					generate(this.templateDaoUnitTest, outDirTestFile, javaPackageTest, classNameTest, schema, entity);
+				} else {
+					System.out.println("Skipped " + javaFilename.getCanonicalPath());
+				}
+			}
+		}
+		generate(this.templateDaoMaster, outDirFile, schema.getDefaultJavaPackageDao(), "DaoMaster", schema, null);
+		generate(this.templateFakeDsEntity, appSrcDirFile, "/com/google/appengine/api/datastore", "Entity", schema, null);
+		generate(this.templateDaoSession, outDirFile, schema.getDefaultJavaPackageDao(), "DaoSession", schema, null);
 
-            Map<String, Object> root = new HashMap<String, Object>();
-            root.put("schema", schema);
-            root.put("entity", entity);
+		long time = System.currentTimeMillis() - start;
+		System.out.println("Processed " + entities.size() + " entities in " + time + "ms");
+	}
 
-            if (entity != null && entity.getHasKeepSections()) {
-                checkKeepSections(file, root);
-            }
+	protected File toFileForceExists(String filename) throws IOException {
+		File file = new File(filename);
+		if (!file.exists()) {
+			throw new IOException(filename + " does not exist. This check is to prevent accidential file generation into a wrong path.");
+		}
+		return file;
+	}
 
-            Writer writer = new FileWriter(file);
-            try {
-                template.process(root, writer);
-                writer.flush();
-                System.out.println("Written " + file.getCanonicalPath());
-            } finally {
-                writer.close();
-            }
-        } catch (Exception ex) {
-            System.err.println("Error while generating " + javaPackage + "." + javaClassName + " ("
-                    + outDirFile.getCanonicalPath() + ")");
-            throw ex;
-        }
-    }
+	private void generate(Template template, File outDirFile, String javaPackage, String javaClassName, Schema schema, Entity entity)
+			throws Exception {
+		try {
+			File file = toJavaFilename(outDirFile, javaPackage, javaClassName);
+			file.getParentFile().mkdirs();
 
-    private void checkKeepSections(File file, Map<String, Object> root) {
-        if (file.exists()) {
-            try {
-                String contents = new String(DaoUtil.readAllBytes(file));
+			Map<String, Object> root = new HashMap<String, Object>();
+			root.put("schema", schema);
+			root.put("entity", entity);
 
-                Matcher matcher;
+			if (entity != null && entity.getHasKeepSections()) {
+				checkKeepSections(file, root);
+			}
 
-                matcher = patternKeepIncludes.matcher(contents);
-                if (matcher.matches()) {
-                    root.put("keepIncludes", matcher.group(1));
-                }
+			Writer writer = new FileWriter(file);
+			try {
+				template.process(root, writer);
+				writer.flush();
+				System.out.println("Written " + file.getCanonicalPath());
+			} finally {
+				writer.close();
+			}
+		} catch (Exception ex) {
+			System.err.println("Error while generating " + javaPackage + "." + javaClassName + " (" + outDirFile.getCanonicalPath() + ")");
+			throw ex;
+		}
+	}
 
-                matcher = patternKeepFields.matcher(contents);
-                if (matcher.matches()) {
-                    root.put("keepFields", matcher.group(1));
-                }
+	private void checkKeepSections(File file, Map<String, Object> root) {
+		if (file.exists()) {
+			try {
+				String contents = new String(DaoUtil.readAllBytes(file));
 
-                matcher = patternKeepMethods.matcher(contents);
-                if (matcher.matches()) {
-                    root.put("keepMethods", matcher.group(1));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+				Matcher matcher;
 
-    protected File toJavaFilename(File outDirFile, String javaPackage, String javaClassName) {
-        String packageSubPath = javaPackage.replace('.', '/');
-        File packagePath = new File(outDirFile, packageSubPath);
-        File file = new File(packagePath, javaClassName + ".java");
-        return file;
-    }
+				matcher = this.patternKeepIncludes.matcher(contents);
+				if (matcher.matches()) {
+					root.put("keepIncludes", matcher.group(1));
+				}
+
+				matcher = this.patternKeepFields.matcher(contents);
+				if (matcher.matches()) {
+					root.put("keepFields", matcher.group(1));
+				}
+
+				matcher = this.patternKeepMethods.matcher(contents);
+				if (matcher.matches()) {
+					root.put("keepMethods", matcher.group(1));
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	protected File toJavaFilename(File outDirFile, String javaPackage, String javaClassName) {
+		String packageSubPath = javaPackage.replace('.', '/');
+		File packagePath = new File(outDirFile, packageSubPath);
+		File file = new File(packagePath, javaClassName + ".java");
+		return file;
+	}
 
 }

@@ -60,8 +60,8 @@ public class TestDaoGenerator {
 
     public void generate() throws Exception {
         DaoGenerator daoGenerator = new DaoGenerator();
-        daoGenerator.generateAll(schema, "../DaoTest/src-gen", "../DaoTest/src");
-        daoGenerator.generateAll(schema2, "../DaoTest/src-gen", "../DaoTest/src");
+        daoGenerator.generateAllWithDataStoreIntegration(schema, "../DaoTest/src-gen", "../DaoTest/src");
+        daoGenerator.generateAllWithDataStoreIntegration(schema2, "../DaoTest/src-gen", "../DaoTest/src");
     }
 
     protected void createSimple() {
