@@ -28,162 +28,171 @@ import java.util.Map;
  * @see <a href="http://greendao-orm.com/documentation/modelling-entities/">Modelling Entities (Documentation page)</a>
  */
 public class Schema {
-    private final int version;
-    private final String defaultJavaPackage;
-    private String defaultJavaPackageDao;
-    private String defaultJavaPackageTest;
-    private final List<Entity> entities;
-    private Map<PropertyType, String> propertyToDbType;
-    private Map<PropertyType, String> propertyToJavaTypeNotNull;
-    private Map<PropertyType, String> propertyToJavaTypeNullable;
-    private boolean hasKeepSectionsByDefault;
-    private boolean useActiveEntitiesByDefault;
+	private final int					version;
+	private final String				defaultJavaPackage;
+	private String						defaultJavaPackageDao;
+	private String						defaultJavaPackageTest;
+	private final List<Entity>			entities;
+	private Map<PropertyType, String>	propertyToDbType;
+	private Map<PropertyType, String>	propertyToJavaTypeNotNull;
+	private Map<PropertyType, String>	propertyToJavaTypeNullable;
+	private boolean						hasKeepSectionsByDefault;
+	private boolean						useActiveEntitiesByDefault;
+	private boolean						hasEasyDatastoreIntegration;
 
-    public Schema(int version, String defaultJavaPackage) {
-        this.version = version;
-        this.defaultJavaPackage = defaultJavaPackage;
-        this.entities = new ArrayList<Entity>();
-        initTypeMappings();
-    }
+	public Schema(int version, String defaultJavaPackage) {
+		this.version = version;
+		this.defaultJavaPackage = defaultJavaPackage;
+		this.entities = new ArrayList<Entity>();
+		initTypeMappings();
+	}
 
-    public void enableKeepSectionsByDefault() {
-        hasKeepSectionsByDefault = true;
-    }
+	public void enableKeepSectionsByDefault() {
+		this.hasKeepSectionsByDefault = true;
+	}
 
-    public void enableActiveEntitiesByDefault() {
-        useActiveEntitiesByDefault = true;
-    }
+	public void enableActiveEntitiesByDefault() {
+		this.useActiveEntitiesByDefault = true;
+	}
 
-    private void initTypeMappings() {
-        propertyToDbType = new HashMap<PropertyType, String>();
-        propertyToDbType.put(PropertyType.Boolean, "INTEGER");
-        propertyToDbType.put(PropertyType.Byte, "INTEGER");
-        propertyToDbType.put(PropertyType.Short, "INTEGER");
-        propertyToDbType.put(PropertyType.Int, "INTEGER");
-        propertyToDbType.put(PropertyType.Long, "INTEGER");
-        propertyToDbType.put(PropertyType.Float, "REAL");
-        propertyToDbType.put(PropertyType.Double, "REAL");
-        propertyToDbType.put(PropertyType.String, "TEXT");
-        propertyToDbType.put(PropertyType.ByteArray, "BLOB");
-        propertyToDbType.put(PropertyType.Date, "INTEGER");
+	public void hasEasyDatastoreIntegration() {
+		this.hasEasyDatastoreIntegration = true;
+	}
 
-        propertyToJavaTypeNotNull = new HashMap<PropertyType, String>();
-        propertyToJavaTypeNotNull.put(PropertyType.Boolean, "boolean");
-        propertyToJavaTypeNotNull.put(PropertyType.Byte, "byte");
-        propertyToJavaTypeNotNull.put(PropertyType.Short, "short");
-        propertyToJavaTypeNotNull.put(PropertyType.Int, "int");
-        propertyToJavaTypeNotNull.put(PropertyType.Long, "long");
-        propertyToJavaTypeNotNull.put(PropertyType.Float, "float");
-        propertyToJavaTypeNotNull.put(PropertyType.Double, "double");
-        propertyToJavaTypeNotNull.put(PropertyType.String, "String");
-        propertyToJavaTypeNotNull.put(PropertyType.ByteArray, "byte[]");
-        propertyToJavaTypeNotNull.put(PropertyType.Date, "java.util.Date");
+	private void initTypeMappings() {
+		this.propertyToDbType = new HashMap<PropertyType, String>();
+		this.propertyToDbType.put(PropertyType.Boolean, "INTEGER");
+		this.propertyToDbType.put(PropertyType.Byte, "INTEGER");
+		this.propertyToDbType.put(PropertyType.Short, "INTEGER");
+		this.propertyToDbType.put(PropertyType.Int, "INTEGER");
+		this.propertyToDbType.put(PropertyType.Long, "INTEGER");
+		this.propertyToDbType.put(PropertyType.Float, "REAL");
+		this.propertyToDbType.put(PropertyType.Double, "REAL");
+		this.propertyToDbType.put(PropertyType.String, "TEXT");
+		this.propertyToDbType.put(PropertyType.ByteArray, "BLOB");
+		this.propertyToDbType.put(PropertyType.Date, "INTEGER");
 
-        propertyToJavaTypeNullable = new HashMap<PropertyType, String>();
-        propertyToJavaTypeNullable.put(PropertyType.Boolean, "Boolean");
-        propertyToJavaTypeNullable.put(PropertyType.Byte, "Byte");
-        propertyToJavaTypeNullable.put(PropertyType.Short, "Short");
-        propertyToJavaTypeNullable.put(PropertyType.Int, "Integer");
-        propertyToJavaTypeNullable.put(PropertyType.Long, "Long");
-        propertyToJavaTypeNullable.put(PropertyType.Float, "Float");
-        propertyToJavaTypeNullable.put(PropertyType.Double, "Double");
-        propertyToJavaTypeNullable.put(PropertyType.String, "String");
-        propertyToJavaTypeNullable.put(PropertyType.ByteArray, "byte[]");
-        propertyToJavaTypeNullable.put(PropertyType.Date, "java.util.Date");
-    }
+		this.propertyToJavaTypeNotNull = new HashMap<PropertyType, String>();
+		this.propertyToJavaTypeNotNull.put(PropertyType.Boolean, "boolean");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Byte, "byte");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Short, "short");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Int, "int");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Long, "long");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Float, "float");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Double, "double");
+		this.propertyToJavaTypeNotNull.put(PropertyType.String, "String");
+		this.propertyToJavaTypeNotNull.put(PropertyType.ByteArray, "byte[]");
+		this.propertyToJavaTypeNotNull.put(PropertyType.Date, "java.util.Date");
 
-    /**
-     * Adds a new entity to the schema. There can be multiple entities per table, but only one may be the primary entity
-     * per table to create table scripts, etc.
-     */
-    public Entity addEntity(String className) {
-        Entity entity = new Entity(this, className);
-        entities.add(entity);
-        return entity;
-    }
+		this.propertyToJavaTypeNullable = new HashMap<PropertyType, String>();
+		this.propertyToJavaTypeNullable.put(PropertyType.Boolean, "Boolean");
+		this.propertyToJavaTypeNullable.put(PropertyType.Byte, "Byte");
+		this.propertyToJavaTypeNullable.put(PropertyType.Short, "Short");
+		this.propertyToJavaTypeNullable.put(PropertyType.Int, "Integer");
+		this.propertyToJavaTypeNullable.put(PropertyType.Long, "Long");
+		this.propertyToJavaTypeNullable.put(PropertyType.Float, "Float");
+		this.propertyToJavaTypeNullable.put(PropertyType.Double, "Double");
+		this.propertyToJavaTypeNullable.put(PropertyType.String, "String");
+		this.propertyToJavaTypeNullable.put(PropertyType.ByteArray, "byte[]");
+		this.propertyToJavaTypeNullable.put(PropertyType.Date, "java.util.Date");
+	}
 
-    /**
-     * Adds a new protocol buffers entity to the schema. There can be multiple entities per table, but only one may be
-     * the primary entity per table to create table scripts, etc.
-     */
-    public Entity addProtobufEntity(String className) {
-        Entity entity = addEntity(className);
-        entity.useProtobuf();
-        return entity;
-    }
+	/**
+	 * Adds a new entity to the schema. There can be multiple entities per table, but only one may be the primary entity
+	 * per table to create table scripts, etc.
+	 */
+	public Entity addEntity(String className) {
+		Entity entity = new Entity(this, className);
+		this.entities.add(entity);
+		return entity;
+	}
 
-    public String mapToDbType(PropertyType propertyType) {
-        return mapType(propertyToDbType, propertyType);
-    }
+	/**
+	 * Adds a new protocol buffers entity to the schema. There can be multiple entities per table, but only one may be
+	 * the primary entity per table to create table scripts, etc.
+	 */
+	public Entity addProtobufEntity(String className) {
+		Entity entity = addEntity(className);
+		entity.useProtobuf();
+		return entity;
+	}
 
-    public String mapToJavaTypeNullable(PropertyType propertyType) {
-        return mapType(propertyToJavaTypeNullable, propertyType);
-    }
+	public String mapToDbType(PropertyType propertyType) {
+		return mapType(this.propertyToDbType, propertyType);
+	}
 
-    public String mapToJavaTypeNotNull(PropertyType propertyType) {
-        return mapType(propertyToJavaTypeNotNull, propertyType);
-    }
+	public String mapToJavaTypeNullable(PropertyType propertyType) {
+		return mapType(this.propertyToJavaTypeNullable, propertyType);
+	}
 
-    private String mapType(Map<PropertyType, String> map, PropertyType propertyType) {
-        String dbType = map.get(propertyType);
-        if (dbType == null) {
-            throw new IllegalStateException("No mapping for " + propertyType);
-        }
-        return dbType;
-    }
+	public String mapToJavaTypeNotNull(PropertyType propertyType) {
+		return mapType(this.propertyToJavaTypeNotNull, propertyType);
+	}
 
-    public int getVersion() {
-        return version;
-    }
+	private String mapType(Map<PropertyType, String> map, PropertyType propertyType) {
+		String dbType = map.get(propertyType);
+		if (dbType == null) {
+			throw new IllegalStateException("No mapping for " + propertyType);
+		}
+		return dbType;
+	}
 
-    public String getDefaultJavaPackage() {
-        return defaultJavaPackage;
-    }
+	public int getVersion() {
+		return this.version;
+	}
 
-    public String getDefaultJavaPackageDao() {
-        return defaultJavaPackageDao;
-    }
+	public String getDefaultJavaPackage() {
+		return this.defaultJavaPackage;
+	}
 
-    public void setDefaultJavaPackageDao(String defaultJavaPackageDao) {
-        this.defaultJavaPackageDao = defaultJavaPackageDao;
-    }
+	public String getDefaultJavaPackageDao() {
+		return this.defaultJavaPackageDao;
+	}
 
-    public String getDefaultJavaPackageTest() {
-        return defaultJavaPackageTest;
-    }
+	public void setDefaultJavaPackageDao(String defaultJavaPackageDao) {
+		this.defaultJavaPackageDao = defaultJavaPackageDao;
+	}
 
-    public void setDefaultJavaPackageTest(String defaultJavaPackageTest) {
-        this.defaultJavaPackageTest = defaultJavaPackageTest;
-    }
+	public String getDefaultJavaPackageTest() {
+		return this.defaultJavaPackageTest;
+	}
 
-    public List<Entity> getEntities() {
-        return entities;
-    }
+	public void setDefaultJavaPackageTest(String defaultJavaPackageTest) {
+		this.defaultJavaPackageTest = defaultJavaPackageTest;
+	}
 
-    public boolean isHasKeepSectionsByDefault() {
-        return hasKeepSectionsByDefault;
-    }
+	public List<Entity> getEntities() {
+		return this.entities;
+	}
 
-    public boolean isUseActiveEntitiesByDefault() {
-        return useActiveEntitiesByDefault;
-    }
+	public boolean isHasKeepSectionsByDefault() {
+		return this.hasKeepSectionsByDefault;
+	}
 
-    void init2ndPass() {
-        if (defaultJavaPackageDao == null) {
-            defaultJavaPackageDao = defaultJavaPackage;
-        }
-        if (defaultJavaPackageTest == null) {
-            defaultJavaPackageTest = defaultJavaPackageDao;
-        }
-        for (Entity entity : entities) {
-            entity.init2ndPass();
-        }
-    }
+	public boolean isUseActiveEntitiesByDefault() {
+		return this.useActiveEntitiesByDefault;
+	}
 
-    void init3ndPass() {
-        for (Entity entity : entities) {
-            entity.init3ndPass();
-        }
-    }
+	public boolean isHasEasyDatastoreIntegration() {
+		return this.hasEasyDatastoreIntegration;
+	}
+
+	void init2ndPass() {
+		if (this.defaultJavaPackageDao == null) {
+			this.defaultJavaPackageDao = this.defaultJavaPackage;
+		}
+		if (this.defaultJavaPackageTest == null) {
+			this.defaultJavaPackageTest = this.defaultJavaPackageDao;
+		}
+		for (Entity entity : this.entities) {
+			entity.init2ndPass();
+		}
+	}
+
+	void init3ndPass() {
+		for (Entity entity : this.entities) {
+			entity.init3ndPass();
+		}
+	}
 
 }
