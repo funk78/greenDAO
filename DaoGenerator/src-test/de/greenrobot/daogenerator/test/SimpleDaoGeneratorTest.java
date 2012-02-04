@@ -65,32 +65,22 @@ public class SimpleDaoGeneratorTest {
 		adressTable.addIntProperty("dummy").notNull();
 		assertEquals(1, schema.getEntities().size());
 		assertEquals(3, adressTable.getProperties().size());
+		schema.hasEasyDatastoreIntegration();
 
 		String outDir = "test-out";
 		File testOutDir = new File(outDir);
 		testOutDir.mkdirs();
 
-		String appSrcDir = "test-app-src-dir";
-		File appSrcTestOutDir = new File(appSrcDir);
-		appSrcTestOutDir.mkdirs();
-
 		File daoFile = new File(outDir + "/de/greenrobot/testdao/" + adressTable.getClassName() + "Dao.java");
 		daoFile.delete();
 		assertFalse(daoFile.exists());
 
-		File fakeEntity = new File(appSrcDir + "/com/google/appengine/api/datastore/Entity.java");
-		fakeEntity.delete();
-		assertFalse(fakeEntity.exists());
+		new DaoGenerator().generateAll(schema, outDir);
 
-		new DaoGenerator().generateAllWithDataStoreIntegration(schema, appSrcDir, outDir);
-
-		assertTrue(fakeEntity.toString(), fakeEntity.exists());
 		assertEquals("PRIMARY KEY", idProperty.getConstraints());
 		assertTrue(daoFile.toString(), daoFile.exists());
 
 		daoFile.delete();
-		fakeEntity.delete();
-		appSrcTestOutDir.delete();
 		testOutDir.delete();
 	}
 

@@ -251,20 +251,21 @@ property>${property.javaType} ${property.propertyName}<#if property_has_next>, <
 </#if>
 
 <#if entity.hasEasyDatastoreIntegration>
-	public ${entity.className}(com.google.appengine.api.datastore.Entity entity) {
-	<#list entity.properties as property>
-		try {
-			this.${property.propertyName} = (${property.javaType}) entity.getProperty(ds_${property.propertyName});
-		} catch (Exception e) {}
-	</#list>
+	public java.util.Map<String, Object> convertToMap() {
+		java.util.Map<String, Object> results = new java.util.HashMap<String, Object>();
+		<#list entity.properties as property>
+			results.put(ds_${property.propertyName}, this.${property.propertyName});
+		</#list>
+		return results;
 	}
 	
-	public com.google.appengine.api.datastore.Entity toDatastoreEntity () {
-		com.google.appengine.api.datastore.Entity result = new com.google.appengine.api.datastore.Entity(ds_entityName);
+	public ${entity.className} initFromMap(java.util.Map<String, Object> map) {
 		<#list entity.properties as property>
-		result.setProperty(ds_${property.propertyName},this.${property.propertyName});
+		try {
+			this.${property.propertyName} = (${property.javaType}) map.get(ds_${property.propertyName});
+		} catch (ClassCastException e) {}
 		</#list>
-		return result;
+		return this;
 	}
 </#if>
 

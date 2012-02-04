@@ -47,7 +47,6 @@ public class DaoGenerator {
 	private Template	templateDaoSession;
 	private Template	templateEntity;
 	private Template	templateDaoUnitTest;
-	private Template	templateFakeDsEntity;
 
 	public DaoGenerator() throws IOException {
 		System.out.println("greenDAO Generator");
@@ -65,7 +64,6 @@ public class DaoGenerator {
 		this.templateDao = config.getTemplate("dao.ftl");
 		this.templateDaoMaster = config.getTemplate("dao-master.ftl");
 		this.templateDaoSession = config.getTemplate("dao-session.ftl");
-		this.templateFakeDsEntity = config.getTemplate("fakeDatastoreEntity.ftl");
 		this.templateEntity = config.getTemplate("entity.ftl");
 		this.templateDaoUnitTest = config.getTemplate("dao-unit-test.ftl");
 	}
@@ -75,19 +73,12 @@ public class DaoGenerator {
 		return Pattern.compile(".*^\\s*?//\\s*?KEEP " + sectionName + ".*?\n(.*?)^\\s*// KEEP " + sectionName + " END.*?\n", flags);
 	}
 
-	/** Generates all entities and DAOs for the given schema. 
-	 * 
-	 * */
-	public void generateAllWithDataStoreIntegration(Schema schema, String appSrcDir, String outDir) throws Exception {
-		generateAll(schema, appSrcDir, outDir, null);
-	}
-
 	public void generateAll(Schema schema, String outDir) throws Exception {
-		generateAll(schema, null, outDir, null);
+		generateAll(schema, outDir, null);
 	}
 
 	/** Generates all entities and DAOs for the given schema. */
-	public void generateAll(Schema schema, String appSrcDir, String outDir, String outDirTest) throws Exception {
+	public void generateAll(Schema schema, String outDir, String outDirTest) throws Exception {
 		long start = System.currentTimeMillis();
 
 		File outDirFile = toFileForceExists(outDir);
@@ -95,16 +86,6 @@ public class DaoGenerator {
 		File outDirTestFile = null;
 		if (outDirTest != null) {
 			outDirTestFile = toFileForceExists(outDirTest);
-		}
-
-		if (schema.isHasEasyDatastoreIntegration() && appSrcDir == null) {
-			throw new RuntimeException(
-					"U have to provide the appSrcDir when using the EasyDataStoreIntegration, use method: generateAllWithDataStoreIntegration()");
-		}
-
-		File appSrcDirFile = null;
-		if (appSrcDir != null) {
-			appSrcDirFile = toFileForceExists(appSrcDir);
 		}
 
 		schema.init2ndPass();
@@ -129,7 +110,6 @@ public class DaoGenerator {
 			}
 		}
 		generate(this.templateDaoMaster, outDirFile, schema.getDefaultJavaPackageDao(), "DaoMaster", schema, null);
-		generate(this.templateFakeDsEntity, appSrcDirFile, "/com/google/appengine/api/datastore", "Entity", schema, null);
 		generate(this.templateDaoSession, outDirFile, schema.getDefaultJavaPackageDao(), "DaoSession", schema, null);
 
 		long time = System.currentTimeMillis() - start;
