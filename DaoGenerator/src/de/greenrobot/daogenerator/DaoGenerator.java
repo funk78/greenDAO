@@ -47,6 +47,7 @@ public class DaoGenerator {
 	private Template	templateDaoSession;
 	private Template	templateEntity;
 	private Template	templateDaoUnitTest;
+	private Template	templateEasyMapping;
 
 	public DaoGenerator() throws IOException {
 		System.out.println("greenDAO Generator");
@@ -64,13 +65,9 @@ public class DaoGenerator {
 		this.templateDao = config.getTemplate("dao.ftl");
 		this.templateDaoMaster = config.getTemplate("dao-master.ftl");
 		this.templateDaoSession = config.getTemplate("dao-session.ftl");
+		this.templateEasyMapping = config.getTemplate("easy-mapping.ftl");
 		this.templateEntity = config.getTemplate("entity.ftl");
 		this.templateDaoUnitTest = config.getTemplate("dao-unit-test.ftl");
-	}
-
-	private Pattern compilePattern(String sectionName) {
-		int flags = Pattern.DOTALL | Pattern.MULTILINE;
-		return Pattern.compile(".*^\\s*?//\\s*?KEEP " + sectionName + ".*?\n(.*?)^\\s*// KEEP " + sectionName + " END.*?\n", flags);
 	}
 
 	public void generateAll(Schema schema, String outDir) throws Exception {
@@ -94,6 +91,12 @@ public class DaoGenerator {
 		List<Entity> entities = schema.getEntities();
 
 		for (Entity entity : entities) {
+
+			if (schema.isHasEasyDatastoreIntegration()) {
+				entity.implementsSerializable();
+				entity.implementsInterface("EasyMapping");
+			}
+
 			generate(this.templateDao, outDirFile, entity.getJavaPackageDao(), entity.getClassNameDao(), schema, entity);
 			if (!entity.isProtobuf() && !entity.isSkipGeneration()) {
 				generate(this.templateEntity, outDirFile, entity.getJavaPackage(), entity.getClassName(), schema, entity);
@@ -111,6 +114,7 @@ public class DaoGenerator {
 		}
 		generate(this.templateDaoMaster, outDirFile, schema.getDefaultJavaPackageDao(), "DaoMaster", schema, null);
 		generate(this.templateDaoSession, outDirFile, schema.getDefaultJavaPackageDao(), "DaoSession", schema, null);
+		generate(this.templateEasyMapping, outDirFile, schema.getDefaultJavaPackageDao(), "EasyMapping", schema, null);
 
 		long time = System.currentTimeMillis() - start;
 		System.out.println("Processed " + entities.size() + " entities in " + time + "ms");
@@ -124,32 +128,11 @@ public class DaoGenerator {
 		return file;
 	}
 
-	private void generate(Template template, File outDirFile, String javaPackage, String javaClassName, Schema schema, Entity entity)
-			throws Exception {
-		try {
-			File file = toJavaFilename(outDirFile, javaPackage, javaClassName);
-			file.getParentFile().mkdirs();
-
-			Map<String, Object> root = new HashMap<String, Object>();
-			root.put("schema", schema);
-			root.put("entity", entity);
-
-			if (entity != null && entity.getHasKeepSections()) {
-				checkKeepSections(file, root);
-			}
-
-			Writer writer = new FileWriter(file);
-			try {
-				template.process(root, writer);
-				writer.flush();
-				System.out.println("Written " + file.getCanonicalPath());
-			} finally {
-				writer.close();
-			}
-		} catch (Exception ex) {
-			System.err.println("Error while generating " + javaPackage + "." + javaClassName + " (" + outDirFile.getCanonicalPath() + ")");
-			throw ex;
-		}
+	protected File toJavaFilename(File outDirFile, String javaPackage, String javaClassName) {
+		String packageSubPath = javaPackage.replace('.', '/');
+		File packagePath = new File(outDirFile, packageSubPath);
+		File file = new File(packagePath, javaClassName + ".java");
+		return file;
 	}
 
 	private void checkKeepSections(File file, Map<String, Object> root) {
@@ -179,11 +162,37 @@ public class DaoGenerator {
 		}
 	}
 
-	protected File toJavaFilename(File outDirFile, String javaPackage, String javaClassName) {
-		String packageSubPath = javaPackage.replace('.', '/');
-		File packagePath = new File(outDirFile, packageSubPath);
-		File file = new File(packagePath, javaClassName + ".java");
-		return file;
+	private Pattern compilePattern(String sectionName) {
+		int flags = Pattern.DOTALL | Pattern.MULTILINE;
+		return Pattern.compile(".*^\\s*?//\\s*?KEEP " + sectionName + ".*?\n(.*?)^\\s*// KEEP " + sectionName + " END.*?\n", flags);
+	}
+
+	private void generate(Template template, File outDirFile, String javaPackage, String javaClassName, Schema schema, Entity entity)
+			throws Exception {
+		try {
+			File file = toJavaFilename(outDirFile, javaPackage, javaClassName);
+			file.getParentFile().mkdirs();
+
+			Map<String, Object> root = new HashMap<String, Object>();
+			root.put("schema", schema);
+			root.put("entity", entity);
+
+			if (entity != null && entity.getHasKeepSections()) {
+				checkKeepSections(file, root);
+			}
+
+			Writer writer = new FileWriter(file);
+			try {
+				template.process(root, writer);
+				writer.flush();
+				System.out.println("Written " + file.getCanonicalPath());
+			} finally {
+				writer.close();
+			}
+		} catch (Exception ex) {
+			System.err.println("Error while generating " + javaPackage + "." + javaClassName + " (" + outDirFile.getCanonicalPath() + ")");
+			throw ex;
+		}
 	}
 
 }

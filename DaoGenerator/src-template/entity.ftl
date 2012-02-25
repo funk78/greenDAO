@@ -263,7 +263,7 @@ property>${property.javaType} ${property.propertyName}<#if property_has_next>, <
 		<#list entity.properties as property>
 		try {
 			this.${property.propertyName} = (${property.javaType}) map.get(ds_${property.propertyName});
-		} catch (ClassCastException e) {}
+		} catch (Exception e) {}
 		</#list>
 		return this;
 	}
